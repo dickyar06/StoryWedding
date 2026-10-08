@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Generator QR Galeri</title>
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Poppins,system-ui,sans-serif;background:#fff5f8;color:#2d2230;display:flex;flex-direction:column;align-items:center;padding:24px 16px}
+  .panel{width:100%;max-width:460px;background:#fff;border-radius:18px;padding:18px;box-shadow:0 6px 24px rgba(80,30,60,.12)}
+  label{display:block;font-size:12px;color:#8c7a90;margin:10px 0 4px}
+  input{width:100%;padding:11px 12px;border:1.5px solid #f0d9e2;border-radius:12px;font:inherit}
+  button{margin-top:14px;width:100%;padding:13px;border:0;border-radius:14px;font:inherit;font-weight:600;color:#fff;cursor:pointer;background:linear-gradient(135deg,#ff5c8a,#ffa24c)}
+  .poster{margin-top:22px;width:100%;max-width:460px;background:#fff;border-radius:22px;padding:34px 24px;text-align:center;box-shadow:0 6px 24px rgba(80,30,60,.12);border:6px double #ffc2d4}
+  .poster h1{font-family:Pacifico,cursive;font-weight:400;color:#ff5c8a;margin:0 0 4px;font-size:34px}
+  .poster .d{color:#8c7a90;font-size:14px;margin-bottom:18px}
+  #qr{display:inline-block;padding:14px;background:#fff;border-radius:14px;border:2px solid #ffe0ea}
+  .poster p{margin:18px 0 0;font-size:17px;font-weight:600}
+  .poster small{display:block;color:#8c7a90;margin-top:6px}
+  @media print{ body{background:#fff;padding:0} .panel,.noprint{display:none} .poster{box-shadow:none;margin:0 auto} }
+</style>
+</head>
+<body>
+<div class="panel">
+  <b>Generator QR Code</b>
+  <label>Link website galeri (hasil hosting)</label>
+  <input id="url" value="https://namamu.github.io/galeri/">
+  <label>Kunci rahasia (HARUS sama dengan ACCESS_KEY di Code.gs)</label>
+  <input id="key" value="rahasia-acara-123">
+  <label>Nama acara</label>
+  <input id="ev" value="Rina & Dika">
+  <label>Tanggal</label>
+  <input id="dt" value="12 Desember 2026">
+  <button id="go">Buat QR</button>
+  <button class="noprint" onclick="window.print()" style="background:#2d2230">🖨️ Cetak / Simpan PDF</button>
+</div>
+
+<div class="poster">
+  <h1 id="pEv"></h1>
+  <div class="d" id="pDt"></div>
+  <div id="qr"></div>
+  <p>Scan untuk lihat &amp; upload foto 📸</p>
+  <small>Buka kamera HP, arahkan ke QR code ini</small>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let qr;
+function build(){
+  const base = $('url').value.trim().replace(/\?.*$/,'');
+  const link = base + '?k=' + encodeURIComponent($('key').value.trim());
+  $('pEv').textContent = $('ev').value; $('pDt').textContent = $('dt').value;
+  $('qr').innerHTML = '';
+  qr = new QRCode($('qr'), { text: link, width: 280, height: 280, colorDark:'#2d2230', colorLight:'#ffffff', correctLevel: QRCode.CorrectLevel.H });
+}
+$('go').onclick = build; build();
+</script>
+</body>
+</html>

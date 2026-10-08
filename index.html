@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#fff5f8">
+<title>Galeri Foto Acara</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@400;600;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#fff5f8; --ink:#2d2230; --muted:#8c7a90; --accent:#ff5c8a; --accent2:#ffa24c;
+    --card:#ffffff; --radius:18px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Poppins,system-ui,sans-serif}
+  body{min-height:100dvh;padding-bottom:110px}
+  header{padding:calc(env(safe-area-inset-top) + 22px) 20px 8px;text-align:center}
+  header .title{font-family:Pacifico,cursive;font-size:30px;color:var(--accent);line-height:1.2}
+  header .sub{font-size:13px;color:var(--muted);margin-top:4px}
+  .bar{display:flex;align-items:center;justify-content:space-between;padding:10px 18px 4px;font-size:13px;color:var(--muted)}
+  .bar button{border:0;background:#fff;border-radius:999px;padding:7px 14px;font:inherit;color:var(--ink);box-shadow:0 2px 8px rgba(0,0,0,.08);cursor:pointer}
+
+  /* galeri */
+  .grid{column-count:2;column-gap:10px;padding:8px 12px}
+  @media(min-width:700px){.grid{column-count:3}}
+  @media(min-width:1000px){.grid{column-count:4}}
+  .grid figure{margin:0 0 10px;break-inside:avoid;border-radius:var(--radius);overflow:hidden;background:#eee;
+    box-shadow:0 4px 14px rgba(80,30,60,.12);cursor:pointer;animation:pop .35s ease both}
+  .grid img{display:block;width:100%;height:auto;min-height:120px;background:linear-gradient(135deg,#ffe3ec,#fff0d9)}
+  @keyframes pop{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:none}}
+  .empty{text-align:center;color:var(--muted);padding:60px 30px;font-size:15px;line-height:1.6}
+  .empty .big{font-size:56px}
+
+  /* tombol + */
+  .fab{position:fixed;right:20px;bottom:calc(env(safe-area-inset-bottom) + 22px);width:68px;height:68px;border-radius:50%;
+    border:0;color:#fff;font-size:42px;line-height:1;background:linear-gradient(135deg,var(--accent),var(--accent2));
+    box-shadow:0 10px 26px rgba(255,92,138,.55);cursor:pointer;z-index:20;display:grid;place-items:center;padding-bottom:4px}
+  .fab:active{transform:scale(.94)}
+
+  /* sheet pilih sumber */
+  .overlay{position:fixed;inset:0;background:rgba(30,10,30,.55);display:none;z-index:40}
+  .overlay.show{display:block}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:26px 26px 0 0;
+    padding:22px 20px calc(env(safe-area-inset-bottom) + 22px);animation:up .25s ease}
+  @keyframes up{from{transform:translateY(100%)}to{transform:none}}
+  .sheet h3{margin:0 0 14px;text-align:center;font-weight:600}
+  .opt{display:flex;align-items:center;gap:14px;width:100%;border:0;background:#fff5f8;border-radius:16px;padding:16px;
+    font:inherit;font-size:16px;margin-bottom:10px;cursor:pointer;text-align:left}
+  .opt span.i{font-size:28px}
+  .opt.cancel{background:transparent;justify-content:center;color:var(--muted)}
+
+  /* editor */
+  .editor{position:fixed;inset:0;background:#1b1020;color:#fff;display:none;flex-direction:column;z-index:50}
+  .editor.show{display:flex}
+  .ed-top{display:flex;justify-content:space-between;align-items:center;padding:calc(env(safe-area-inset-top) + 12px) 16px 8px}
+  .ed-top button{background:rgba(255,255,255,.14);border:0;color:#fff;border-radius:999px;padding:8px 16px;font:inherit;cursor:pointer}
+  .ed-top .t{font-weight:600}
+  .stage{flex:1;min-height:0;display:grid;place-items:center;padding:6px 16px}
+  .stage canvas{max-width:100%;max-height:100%;border-radius:14px;box-shadow:0 10px 40px rgba(0,0,0,.5);background:#000}
+  .tools{padding:8px 14px calc(env(safe-area-inset-bottom) + 14px);background:#241730;border-radius:22px 22px 0 0}
+  .chips{display:flex;gap:8px;overflow-x:auto;padding:6px 2px 10px;scrollbar-width:none}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{flex:0 0 auto;border:2px solid transparent;background:rgba(255,255,255,.1);color:#fff;border-radius:14px;
+    padding:8px 12px;font:inherit;font-size:12px;text-align:center;cursor:pointer;min-width:74px}
+  .chip .e{display:block;font-size:24px;margin-bottom:2px}
+  .chip.on{border-color:var(--accent);background:rgba(255,92,138,.25)}
+  .row{display:flex;gap:10px;align-items:center;margin:4px 0 10px}
+  .row label{font-size:12px;color:#c9b8d0;flex:0 0 52px}
+  .row input[type=range]{flex:1;accent-color:var(--accent)}
+  .row input[type=text]{flex:1;border:0;border-radius:12px;padding:10px 12px;font:inherit;background:rgba(255,255,255,.12);color:#fff;outline:none}
+  .send{width:100%;border:0;border-radius:16px;padding:15px;font:inherit;font-weight:600;font-size:16px;color:#fff;cursor:pointer;
+    background:linear-gradient(135deg,var(--accent),var(--accent2))}
+  .send:disabled{opacity:.6}
+
+  /* lightbox */
+  .lb{position:fixed;inset:0;background:rgba(10,5,15,.94);display:none;z-index:60;align-items:center;justify-content:center;flex-direction:column}
+  .lb.show{display:flex}
+  .lb img{max-width:96vw;max-height:78dvh;border-radius:12px;object-fit:contain}
+  .lb .acts{display:flex;gap:10px;margin-top:16px}
+  .lb a,.lb button{background:rgba(255,255,255,.16);color:#fff;border:0;border-radius:999px;padding:10px 18px;font:inherit;text-decoration:none;cursor:pointer}
+  .lb .x{position:absolute;top:calc(env(safe-area-inset-top) + 14px);right:16px}
+  .lb .nav{position:absolute;top:50%;transform:translateY(-50%);font-size:26px;width:46px;height:46px;padding:0}
+  .lb .prev{left:8px}.lb .next{right:8px}
+
+  /* terkunci */
+  .lock{min-height:100dvh;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;gap:12px}
+  .lock .big{font-size:76px}
+  .lock h2{font-family:Pacifico,cursive;color:var(--accent);margin:0;font-weight:400;font-size:28px}
+  .lock p{color:var(--muted);max-width:300px;line-height:1.6;margin:0}
+
+  .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 108px);transform:translateX(-50%) translateY(20px);
+    background:#2d2230;color:#fff;padding:11px 18px;border-radius:999px;font-size:14px;opacity:0;transition:.3s;z-index:80;pointer-events:none;max-width:90vw;text-align:center}
+  .toast.show{opacity:1;transform:translateX(-50%)}
+  .hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<!-- ===== Halaman terkunci (belum scan QR) ===== -->
+<section class="lock" id="lock">
+  <div class="big">📷</div>
+  <h2>Scan dulu ya!</h2>
+  <p>Untuk masuk ke galeri, scan QR code yang tersedia di lokasi acara menggunakan kamera HP Anda.</p>
+</section>
+
+<!-- ===== Aplikasi ===== -->
+<main id="app" class="hidden">
+  <header>
+    <div class="title" id="evName">Galeri Acara</div>
+    <div class="sub" id="evDate"></div>
+  </header>
+  <div class="bar"><span id="count">Memuat…</span><button id="refresh">↻ Segarkan</button></div>
+  <div class="grid" id="grid"></div>
+  <div class="empty hidden" id="empty"><div class="big">🎞️</div>Belum ada foto.<br>Jadilah yang pertama — tekan tombol <b>+</b>!</div>
+  <button class="fab" id="fab" aria-label="Tambah foto">+</button>
+</main>
+
+<!-- ===== Pilih sumber foto ===== -->
+<div class="overlay" id="srcOverlay">
+  <div class="sheet">
+    <h3>Tambah Foto</h3>
+    <button class="opt" id="optCam"><span class="i">📸</span> Ambil foto dengan kamera</button>
+    <button class="opt" id="optGal"><span class="i">🖼️</span> Pilih dari galeri HP</button>
+    <button class="opt cancel" id="optCancel">Batal</button>
+  </div>
+</div>
+<input type="file" id="inCam" accept="image/*" capture="environment" class="hidden">
+<input type="file" id="inGal" accept="image/*" class="hidden">
+
+<!-- ===== Editor frame ===== -->
+<div class="editor" id="editor">
+  <div class="ed-top"><button id="edBack">✕ Batal</button><span class="t">Pilih Frame</span><span style="width:78px"></span></div>
+  <div class="stage"><canvas id="cv" width="1080" height="1350"></canvas></div>
+  <div class="tools">
+    <div class="chips" id="chips"></div>
+    <div class="row"><label>Zoom</label><input type="range" id="zoom" min="1" max="2.5" step="0.01" value="1"></div>
+    <div class="row"><label>Pesan</label><input type="text" id="caption" maxlength="40" placeholder="Tulis pesan singkat (opsional)"></div>
+    <button class="send" id="send">Kirim ke Galeri 🎉</button>
+  </div>
+</div>
+
+<!-- ===== Lightbox ===== -->
+<div class="lb" id="lb">
+  <button class="x" id="lbClose">✕</button>
+  <button class="nav prev" id="lbPrev">‹</button>
+  <img id="lbImg" alt="">
+  <button class="nav next" id="lbNext">›</button>
+  <div class="acts"><a id="lbDl" target="_blank" rel="noopener">⬇ Unduh</a></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =====================================================
+   PENGATURAN — ubah bagian ini saja
+   ===================================================== */
+const CONFIG = {
+  EVENT_NAME: 'Dicky & Rahmanisya',
+  EVENT_DATE: '17 Januari 2027',
+  API_URL: 'https://script.google.com/macros/s/AKfycbzh7Bvp6tk6f-oLdEVJa3-B4-txD-QbxNmbwxEYibRtYvZzuftkx1Hy9NlSNw6NFwxurA/exec',   // hasil Deploy di Apps Script (berakhiran /exec)
+  POLL_MS: 30000                              // seberapa sering galeri menyegarkan diri
+};
+/* ===================================================== */
+
+const $ = id => document.getElementById(id);
+const DEMO = CONFIG.API_URL.includes('PASTE_');
+const W = 1080, H = 1350;
+
+/* ---------- Akses via QR ---------- */
+const params = new URLSearchParams(location.search);
+let KEY = params.get('k');
+try { if (KEY) localStorage.setItem('galeri_key', KEY); else KEY = localStorage.getItem('galeri_key'); } catch(e){}
+if (DEMO && !KEY) KEY = 'demo';
+if (!KEY) { $('lock').style.display = 'flex'; }
+else { $('app').classList.remove('hidden'); init(); }
+
+function toast(msg, ms = 2600){
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), ms);
+}
+
+/* ---------- Galeri ---------- */
+let photos = [];            // {id?, src, full, dl}
+let demoPhotos = [];
+function init(){
+  $('evName').textContent = CONFIG.EVENT_NAME;
+  $('evDate').textContent = CONFIG.EVENT_DATE;
+  document.title = 'Galeri · ' + CONFIG.EVENT_NAME;
+  if (DEMO) toast('Mode demo: foto belum tersimpan ke Drive', 4200);
+  loadList();
+  setInterval(() => { if (!document.hidden && !$('editor').classList.contains('show')) loadList(true); }, CONFIG.POLL_MS);
+  $('refresh').onclick = () => loadList();
+}
+
+async function loadList(silent){
+  if (DEMO){ photos = demoPhotos.slice(); render(); return; }
+  try{
+    const r = await fetch(`${CONFIG.API_URL}?action=list&k=${encodeURIComponent(KEY)}`);
+    const d = await r.json();
+    if (!d.ok){
+      if (/kunci/i.test(d.error||'')) { try{localStorage.removeItem('galeri_key')}catch(e){}; KEY=null; $('app').classList.add('hidden'); $('lock').style.display='flex'; return; }
+      throw new Error(d.error);
+    }
+    photos = d.photos.map(p => ({
+      id: p.id,
+      src: `https://drive.google.com/thumbnail?id=${p.id}&sz=w600`,
+      full: `https://drive.google.com/thumbnail?id=${p.id}&sz=w1600`,
+      dl: `https://drive.google.com/uc?export=download&id=${p.id}`
+    }));
+    render();
+  }catch(e){ if(!silent) toast('Gagal memuat galeri. Coba lagi ya.'); }
+}
+
+let rendered = '';
+function render(){
+  const sig = photos.map(p => p.id || p.src).join('|');
+  $('count').textContent = photos.length ? `${photos.length} foto` : '';
+  $('empty').classList.toggle('hidden', photos.length > 0);
+  if (sig === rendered) return;
+  rendered = sig;
+  const g = $('grid'); g.innerHTML = '';
+  photos.forEach((p, i) => {
+    const f = document.createElement('figure');
+    const im = new Image(); im.loading = 'lazy'; im.decoding = 'async'; im.src = p.src; im.alt = 'Foto ' + (i+1);
+    f.appendChild(im); f.onclick = () => openLB(i); g.appendChild(f);
+  });
+}
+
+/* ---------- Lightbox ---------- */
+let lbIdx = 0;
+function openLB(i){
+  lbIdx = (i + photos.length) % photos.length;
+  const p = photos[lbIdx];
+  $('lbImg').src = p.full; $('lbDl').href = p.dl;
+  $('lbDl').toggleAttribute('download', !!DEMO); if (DEMO) $('lbDl').download = 'foto.jpg';
+  $('lb').classList.add('show');
+}
+$('lbClose').onclick = () => $('lb').classList.remove('show');
+$('lbPrev').onclick = () => openLB(lbIdx - 1);
+$('lbNext').onclick = () => openLB(lbIdx + 1);
+let sx = 0;
+$('lb').addEventListener('touchstart', e => sx = e.touches[0].clientX, {passive:true});
+$('lb').addEventListener('touchend', e => { const dx = e.changedTouches[0].clientX - sx; if (Math.abs(dx) > 60) openLB(lbIdx + (dx < 0 ? 1 : -1)); });
+
+/* ---------- Tombol + ---------- */
+$('fab').onclick = () => $('srcOverlay').classList.add('show');
+$('optCancel').onclick = () => $('srcOverlay').classList.remove('show');
+$('srcOverlay').onclick = e => { if (e.target.id === 'srcOverlay') $('srcOverlay').classList.remove('show'); };
+$('optCam').onclick = () => $('inCam').click();
+$('optGal').onclick = () => $('inGal').click();
+$('inCam').onchange = e => pick(e.target);
+$('inGal').onchange = e => pick(e.target);
+
+let IMG = null;
+async function pick(input){
+  const file = input.files && input.files[0]; input.value = '';
+  if (!file) return;
+  $('srcOverlay').classList.remove('show');
+  try{
+    IMG = ('createImageBitmap' in window)
+      ? await createImageBitmap(file, { imageOrientation: 'from-image' })
+      : await loadImg(file);
+  }catch(e){ try{ IMG = await loadImg(file); }catch(_){ toast('Foto tidak bisa dibuka.'); return; } }
+  try{ await Promise.all([document.fonts.load('60px Pacifico'), document.fonts.load('900 60px Poppins'), document.fonts.load('600 40px Poppins')]); }catch(e){}
+  view.zoom = 1; $('zoom').value = 1; $('caption').value = '';
+  buildChips(); $('editor').classList.add('show'); draw();
+}
+function loadImg(file){
+  return new Promise((res, rej) => {
+    const u = URL.createObjectURL(file), im = new Image();
+    im.onload = () => res(im); im.onerror = rej; im.src = u;
+  });
+}
+
+/* =====================================================
+   FRAME — digambar langsung di canvas (semua orisinal)
+   ===================================================== */
+const view = { zoom: 1 };
+const FB = 'Poppins, system-ui, sans-serif', FH = 'Pacifico, "Brush Script MT", cursive';
+const EMO = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+
+function rnd(seed){ return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+  t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function rr(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
+function cover(c,img,x,y,w,h,r=0){
+  c.save(); rr(c,x,y,w,h,r); c.clip();
+  const s = Math.max(w/img.width, h/img.height) * view.zoom, dw = img.width*s, dh = img.height*s;
+  c.drawImage(img, x+(w-dw)/2, y+(h-dh)/2, dw, dh); c.restore();
+}
+function emo(c,ch,x,y,size,rot=0,glow){
+  c.save(); c.translate(x,y); c.rotate(rot*Math.PI/180); c.font = `${size}px ${EMO}`; c.textAlign='center'; c.textBaseline='middle';
+  if (glow){ c.shadowColor = glow; c.shadowBlur = 14; }
+  c.fillText(ch,0,0); c.restore();
+}
+function txt(c,t,x,y,size,color,font=FB,o={}){
+  if (!t) return;
+  c.save(); const wt = o.weight ? o.weight + ' ' : '';
+  let s = size; c.font = `${wt}${s}px ${font}`;
+  const maxW = o.maxW || 900; while (c.measureText(t).width > maxW && s > 20){ s -= 2; c.font = `${wt}${s}px ${font}`; }
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  if (o.glow){ c.shadowColor = o.glow; c.shadowBlur = 30; }
+  if (o.stroke){ c.lineWidth = o.strokeW || 12; c.lineJoin = 'round'; c.strokeStyle = o.stroke; c.strokeText(t,x,y); }
+  c.fillStyle = color; c.fillText(t,x,y); c.restore();
+}
+function tape(c,x,y,rot){ c.save(); c.translate(x,y); c.rotate(rot*Math.PI/180); c.fillStyle='rgba(255,214,102,.78)'; c.fillRect(-85,-26,170,52); c.restore(); }
+const cap = m => m.caption || m.title;
+
+const FRAMES = [
+  { id:'plain', name:'Polos', e:'🖼️', draw(c,img,m){ cover(c,img,0,0,W,H); } },
+
+  { id:'polaroid', name:'Polaroid', e:'📸', draw(c,img,m){
+    c.fillStyle='#e9e2d3'; c.fillRect(0,0,W,H);
+    c.save(); c.shadowColor='rgba(0,0,0,.3)'; c.shadowBlur=40; c.shadowOffsetY=16; c.fillStyle='#fff'; c.fillRect(70,70,940,1210); c.restore();
+    cover(c,img,115,115,850,880);
+    tape(c,200,82,-8); tape(c,880,82,9);
+    txt(c,cap(m),W/2,1115,72,'#3a3340',FH);
+    txt(c,m.date,W/2,1205,38,'#9a8f9e',FB);
+  }},
+
+  { id:'cute', name:'Pink Imut', e:'🎀', draw(c,img,m){
+    const g=c.createLinearGradient(0,0,W,H); g.addColorStop(0,'#ffd9ea'); g.addColorStop(1,'#ffb0d0'); c.fillStyle=g; c.fillRect(0,0,W,H);
+    c.fillStyle='#fff';
+    for(let x=0;x<=W;x+=62){ c.beginPath(); c.arc(x,0,36,0,7); c.fill(); c.beginPath(); c.arc(x,H,36,0,7); c.fill(); }
+    for(let y=0;y<=H;y+=62){ c.beginPath(); c.arc(0,y,36,0,7); c.fill(); c.beginPath(); c.arc(W,y,36,0,7); c.fill(); }
+    txt(c,m.title,W/2,120,76,'#d6336c',FH);
+    c.save(); c.shadowColor='rgba(214,51,108,.35)'; c.shadowBlur=30; c.shadowOffsetY=10; c.fillStyle='#fff'; rr(c,82,192,916,916,70); c.fill(); c.restore();
+    cover(c,img,100,210,880,880,56);
+    emo(c,'🎀',105,215,130,-22); emo(c,'💖',985,1100,110,14);
+    for(let i=0;i<7;i++) emo(c,i%2?'💗':'💕',150+i*130,1175+(i%2)*14,54,(i%2?8:-8));
+    txt(c,m.caption||m.date,W/2,1262,64,'#b3245a',FH);
+  }},
+
+  { id:'neon', name:'Neon', e:'🌃', draw(c,img,m){
+    c.fillStyle='#12002b'; c.fillRect(0,0,W,H);
+    const r=rnd(5); for(let i=0;i<55;i++){ c.fillStyle=`rgba(255,255,255,${.2+r()*.6})`; c.beginPath(); c.arc(r()*W,r()*H,1+r()*2.6,0,7); c.fill(); }
+    c.save(); c.shadowColor='#ff2bd6'; c.shadowBlur=45; c.strokeStyle='#ff2bd6'; c.lineWidth=10; rr(c,70,70,940,1030,44); c.stroke(); c.stroke(); c.restore();
+    c.save(); c.shadowColor='#00e5ff'; c.shadowBlur=30; c.strokeStyle='#00e5ff'; c.lineWidth=6; rr(c,98,98,884,974,30); c.stroke(); c.restore();
+    cover(c,img,112,112,856,948,20);
+    txt(c,cap(m),W/2,1190,84,'#fff',FH,{glow:'#00e5ff'});
+    txt(c,m.date,W/2,1272,38,'#ff9bf0',FB,{glow:'#ff2bd6',weight:600});
+    emo(c,'✨',90,1190,70,-10); emo(c,'✨',990,1190,70,10); emo(c,'⚡',990,60,64,15); emo(c,'⚡',90,60,64,-15);
+  }},
+
+  { id:'film', name:'Film', e:'🎞️', draw(c,img,m){
+    c.fillStyle='#0d0d0d'; c.fillRect(0,0,W,H);
+    c.fillStyle='#f1f1f1';
+    for(let y=28;y<H;y+=96){ rr(c,36,y,44,60,12); c.fill(); rr(c,1000,y,44,60,12); c.fill(); }
+    cover(c,img,130,150,820,960,6);
+    c.strokeStyle='#f5a623'; c.lineWidth=4; c.strokeRect(130,150,820,960);
+    txt(c,'●  REC   FILM 400   12A',W/2,100,32,'#f5a623','"Courier New", monospace',{weight:'bold'});
+    txt(c,cap(m),W/2,1195,66,'#f5a623','"Courier New", monospace',{weight:'bold'});
+    txt(c,m.date,W/2,1268,34,'#c98a1c','"Courier New", monospace');
+  }},
+
+  { id:'confetti', name:'Pesta', e:'🎉', draw(c,img,m){
+    cover(c,img,0,0,W,H);
+    const g=c.createLinearGradient(0,980,0,H); g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,.72)'); c.fillStyle=g; c.fillRect(0,980,W,H-980);
+    const r=rnd(11), pal=['#ff5c8a','#ffd23f','#3bceac','#4cc9f0','#b388ff','#ff9f1c'];
+    for(let i=0;i<150;i++){ c.save(); c.translate(r()*W,r()*H); c.rotate(r()*6.28); c.fillStyle=pal[i%pal.length]; c.globalAlpha=.92;
+      if(i%3===0){ c.beginPath(); c.arc(0,0,7+r()*6,0,7); c.fill(); } else c.fillRect(-7,-14,14+r()*8,28+r()*10); c.restore(); }
+    emo(c,'🎉',100,110,140,-15); emo(c,'🎈',980,120,150,12);
+    txt(c,cap(m),W/2,1212,86,'#fff',FH,{stroke:'rgba(0,0,0,.35)',strokeW:10});
+    txt(c,m.date,W/2,1285,38,'#ffe9a8',FB,{weight:600});
+  }},
+
+  { id:'stamp', name:'Perangko', e:'✉️', draw(c,img,m){
+    const bg='#f6edd6'; c.fillStyle=bg; c.fillRect(0,0,W,H);
+    c.save(); c.shadowColor='rgba(0,0,0,.25)'; c.shadowBlur=24; c.shadowOffsetY=10; c.fillStyle='#fff'; c.fillRect(70,70,940,1050); c.restore();
+    c.fillStyle=bg;
+    for(let x=70;x<=1010;x+=47){ c.beginPath(); c.arc(x,70,17,0,7); c.fill(); c.beginPath(); c.arc(x,1120,17,0,7); c.fill(); }
+    for(let y=70;y<=1120;y+=47){ c.beginPath(); c.arc(70,y,17,0,7); c.fill(); c.beginPath(); c.arc(1010,y,17,0,7); c.fill(); }
+    cover(c,img,128,128,824,934);
+    c.save(); c.strokeStyle='rgba(122,50,40,.55)'; c.lineWidth=6; c.beginPath(); c.arc(850,990,92,0,7); c.stroke(); c.beginPath(); c.arc(850,990,74,0,7); c.stroke();
+    for(let i=0;i<4;i++){ c.beginPath(); for(let x=560;x<=800;x+=8){ const y=930+i*34+Math.sin(x/16)*10; x===560?c.moveTo(x,y):c.lineTo(x,y);} c.stroke(); } c.restore();
+    c.save(); c.translate(850,990); c.rotate(-14*Math.PI/180); txt(c,'POSTED',0,0,30,'rgba(122,50,40,.7)',FB,{weight:900}); c.restore();
+    txt(c,'Greetings from',W/2,1188,40,'#7a5c3a',FB);
+    txt(c,cap(m),W/2,1262,70,'#9c3d2e',FH);
+  }},
+
+  { id:'flower', name:'Bunga', e:'🌸', draw(c,img,m){
+    c.fillStyle='#fff7ef'; c.fillRect(0,0,W,H);
+    const g=c.createRadialGradient(W/2,H/2,200,W/2,H/2,900); g.addColorStop(0,'rgba(255,214,224,0)'); g.addColorStop(1,'rgba(255,214,224,.7)'); c.fillStyle=g; c.fillRect(0,0,W,H);
+    cover(c,img,140,190,800,900,40);
+    const r=rnd(3), set=['🌸','🌼','🌷','🌿','🦋','🌺'];
+    const put=(x,y)=>emo(c,set[Math.floor(r()*set.length)],x,y,64,(r()-.5)*60);
+    for(let x=130;x<=950;x+=64){ put(x,160); put(x,1120); }
+    for(let y=230;y<=1060;y+=64){ put(108,y); put(972,y); }
+    emo(c,'🌺',110,160,120,-15); emo(c,'🌸',970,160,120,15); emo(c,'🌼',110,1120,120,10); emo(c,'🌷',970,1120,120,-10);
+    txt(c,m.title,W/2,85,68,'#c2185b',FH);
+    txt(c,m.caption||m.date,W/2,1228,64,'#8a4b5e',FH);
+    if(m.caption) txt(c,m.date,W/2,1295,34,'#b08a96',FB);
+  }},
+
+  { id:'sticker', name:'Stiker', e:'🥳', draw(c,img,m){
+    const g=c.createLinearGradient(0,0,W,H); g.addColorStop(0,'#ffe259'); g.addColorStop(1,'#ff9a44'); c.fillStyle=g; c.fillRect(0,0,W,H);
+    const r=rnd(21); c.fillStyle='rgba(255,255,255,.28)'; for(let i=0;i<26;i++){ c.beginPath(); c.arc(r()*W,r()*H,14+r()*30,0,7); c.fill(); }
+    c.save(); c.translate(W/2,600); c.rotate(-3*Math.PI/180);
+    c.shadowColor='rgba(120,50,0,.4)'; c.shadowBlur=36; c.shadowOffsetY=18; c.fillStyle='#fff'; rr(c,-468,-492,936,984,76); c.fill(); c.shadowColor='transparent';
+    c.translate(-450,-474); cover(c,img,0,0,900,948,58); c.restore();
+    emo(c,'🎉',105,140,150,-16,'#fff'); emo(c,'🎈',975,150,150,14,'#fff'); emo(c,'⭐',100,1120,130,12,'#fff'); emo(c,'🥳',985,1110,150,-10,'#fff');
+    txt(c,(m.caption||'SQUAD GOALS').toUpperCase(),W/2,1235,92,'#fff',FB,{weight:900,stroke:'#e8590c',strokeW:16});
+    txt(c,m.date,W/2,1306,32,'#8a3a00',FB,{weight:600});
+  }},
+
+  { id:'retro', name:'Retro', e:'🕹️', draw(c,img,m){
+    const s=90; for(let y=0;y*s<H;y++) for(let x=0;x*s<W;x++){ c.fillStyle=(x+y)%2?'#ffe3f1':'#d8f1ff'; c.fillRect(x*s,y*s,s,s); }
+    c.fillStyle='#111'; c.fillRect(124,144,880,960);
+    c.fillStyle='#111'; c.fillRect(100,120,880,960);
+    cover(c,img,114,134,852,932);
+    c.save(); c.translate(W/2,1215); c.rotate(-2*Math.PI/180);
+    c.fillStyle='#111'; c.fillRect(-358,-58,760,130); c.fillStyle='#ffe14d'; c.fillRect(-380,-76,760,130); c.strokeStyle='#111'; c.lineWidth=8; c.strokeRect(-380,-76,760,130);
+    txt(c,(m.caption||'SMILE!').toUpperCase(),-0,-11,62,'#111',FB,{weight:900,maxW:700}); c.restore();
+    emo(c,'⭐',960,120,120,15); emo(c,'💾',120,1090,100,-12); emo(c,'👾',980,1090,100,10);
+    txt(c,m.date,W/2,1310,30,'#444',FB,{weight:600});
+  }}
+];
+
+let frameIdx = 1;
+function buildChips(){
+  const box = $('chips'); box.innerHTML = '';
+  FRAMES.forEach((f,i) => {
+    const b = document.createElement('button'); b.className = 'chip' + (i === frameIdx ? ' on' : '');
+    b.innerHTML = `<span class="e">${f.e}</span>${f.name}`;
+    b.onclick = () => { frameIdx = i; [...box.children].forEach((x,j) => x.classList.toggle('on', j === i)); draw(); };
+    box.appendChild(b);
+  });
+}
+function draw(){
+  if (!IMG) return;
+  const cv = $('cv'), c = cv.getContext('2d');
+  c.clearRect(0,0,W,H);
+  FRAMES[frameIdx].draw(c, IMG, { title: CONFIG.EVENT_NAME, date: CONFIG.EVENT_DATE, caption: $('caption').value.trim() });
+}
+$('zoom').oninput = e => { view.zoom = +e.target.value; draw(); };
+$('caption').oninput = draw;
+$('edBack').onclick = () => $('editor').classList.remove('show');
+
+/* ---------- Kirim ke Google Drive ---------- */
+$('send').onclick = async () => {
+  const btn = $('send'); btn.disabled = true; btn.textContent = 'Mengunggah…';
+  try{
+    const blob = await new Promise(res => $('cv').toBlob(res, 'image/jpeg', 0.86));
+    if (DEMO){
+      const url = URL.createObjectURL(blob);
+      demoPhotos.unshift({ src: url, full: url, dl: url });
+      $('editor').classList.remove('show'); toast('Foto masuk galeri (mode demo) 🎉'); loadList(); return;
+    }
+    const b64 = await new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(String(fr.result).split(',')[1]); fr.onerror = rej; fr.readAsDataURL(blob); });
+    const name = `foto_${new Date().toISOString().replace(/[:.]/g,'-')}_${Math.random().toString(36).slice(2,6)}.jpg`;
+    const r = await fetch(CONFIG.API_URL, { method: 'POST', body: JSON.stringify({ k: KEY, name, data: b64 }) }); // text/plain → tanpa preflight CORS
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || 'Gagal');
+    $('editor').classList.remove('show'); toast('Foto terkirim! Terima kasih 🎉');
+    loadList(true); setTimeout(() => loadList(true), 3500);
+  }catch(e){
+    toast('Gagal mengirim: ' + (e.message || 'cek koneksi') , 3600);
+  }finally{ btn.disabled = false; btn.textContent = 'Kirim ke Galeri 🎉'; }
+};
+</script>
+</body>
+</html>
