@@ -179,6 +179,7 @@ const $ = id => document.getElementById(id);
 const DEMO = CONFIG.API_URL.includes('PASTE_');
 const W = 1080, H = 1350;
 const GUEST_KEY = 'galeri_guest_name';
+const GUEST_SCAN_KEY = 'galeri_last_scan_key';
 
 function normalizeGuestName(value){
   return String(value || '')
@@ -192,7 +193,7 @@ function normalizeGuestName(value){
 
 function getGuestName(){
   try {
-    return normalizeGuestName(localStorage.getItem(GUEST_KEY));
+    return normalizeGuestName(sessionStorage.getItem(GUEST_KEY));
   } catch (e) {
     return '';
   }
@@ -201,8 +202,18 @@ function getGuestName(){
 function setGuestName(value){
   const safe = normalizeGuestName(value);
   if (!safe) return '';
-  try { localStorage.setItem(GUEST_KEY, safe); } catch (e) {}
+  try {
+    sessionStorage.setItem(GUEST_KEY, safe);
+    if (KEY) sessionStorage.setItem(GUEST_SCAN_KEY, KEY);
+  } catch (e) {}
   return safe;
+}
+
+function clearGuestName(){
+  try {
+    sessionStorage.removeItem(GUEST_KEY);
+    sessionStorage.removeItem(GUEST_SCAN_KEY);
+  } catch (e) {}
 }
 
 function showGuestPrompt(){
@@ -223,6 +234,13 @@ const params = new URLSearchParams(location.search);
 let KEY = params.get('k');
 try { if (KEY) localStorage.setItem('galeri_key', KEY); else KEY = localStorage.getItem('galeri_key'); } catch(e){}
 if (DEMO && !KEY) KEY = 'demo';
+
+const lastScanKey = (() => {
+  try { return sessionStorage.getItem(GUEST_SCAN_KEY) || ''; } catch (e) { return ''; }
+})();
+if (KEY && lastScanKey && lastScanKey !== KEY) {
+  clearGuestName();
+}
 
 const guestName = getGuestName();
 if (!KEY) {
