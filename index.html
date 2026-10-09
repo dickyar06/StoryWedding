@@ -111,6 +111,7 @@
   <form class="name-box" id="nameForm">
     <label for="guestName">Masukkan nama Anda</label>
     <input id="guestName" type="text" maxlength="40" placeholder="Contoh: Dicky" autocomplete="off" required>
+    <small style="color:var(--muted);font-size:12px;line-height:1.5;text-align:left;">Anda hanya bisa melakukan 5x foto.</small>
     <button type="submit">Masuk ke Galeri</button>
   </form>
 </section>
@@ -527,7 +528,12 @@ $('send').onclick = async () => {
     const b64 = await new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(String(fr.result).split(',')[1]); fr.onerror = rej; fr.readAsDataURL(blob); });
     const r = await fetch(CONFIG.API_URL, { method: 'POST', body: JSON.stringify({ k: KEY, name: guestName, data: b64 }) }); // text/plain → tanpa preflight CORS
     const d = await r.json();
-    if (!d.ok) throw new Error(d.error || 'Gagal');
+    if (!d.ok) {
+      if (/5 foto|5x foto|batas upload/i.test(d.error || '')) {
+        throw new Error('Anda hanya bisa melakukan 5x foto.');
+      }
+      throw new Error(d.error || 'Gagal');
+    }
     $('editor').classList.remove('show'); toast('Foto terkirim! Terima kasih 🎉');
     loadList(true); setTimeout(() => loadList(true), 3500);
   }catch(e){
