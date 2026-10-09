@@ -89,6 +89,11 @@
   .lock .big{font-size:76px}
   .lock h2{font-family:Pacifico,cursive;color:var(--accent);margin:0;font-weight:400;font-size:28px}
   .lock p{color:var(--muted);max-width:300px;line-height:1.6;margin:0}
+  .name-box{display:flex;flex-direction:column;gap:10px;width:min(100%, 360px);margin-top:8px}
+  .name-box label{font-size:12px;color:var(--muted);text-align:left;font-weight:600;letter-spacing:.02em}
+  .name-box input{width:100%;padding:14px 16px;border:1px solid rgba(137,84,99,.2);border-radius:14px;background:#fff;font:inherit;color:var(--ink);outline:none;box-shadow:0 4px 16px rgba(0,0,0,.04)}
+  .name-box input:focus{border-color:rgba(255,92,138,.7);box-shadow:0 0 0 3px rgba(255,92,138,.12)}
+  .name-box button{border:0;border-radius:14px;padding:14px 16px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font:inherit;font-weight:600;cursor:pointer}
 
   .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 108px);transform:translateX(-50%) translateY(20px);
     background:#2d2230;color:#fff;padding:11px 18px;border-radius:999px;font-size:14px;opacity:0;transition:.3s;z-index:80;pointer-events:none;max-width:90vw;text-align:center}
@@ -103,6 +108,11 @@
   <div class="big">📷</div>
   <h2>Scan dulu ya!</h2>
   <p>Untuk masuk ke galeri, scan QR code yang tersedia di lokasi acara menggunakan kamera HP Anda.</p>
+  <form class="name-box" id="nameForm">
+    <label for="guestName">Masukkan nama Anda</label>
+    <input id="guestName" type="text" maxlength="40" placeholder="Contoh: Dicky" autocomplete="off" required>
+    <button type="submit">Masuk ke Galeri</button>
+  </form>
 </section>
 
 <!-- ===== Aplikasi ===== -->
@@ -167,14 +177,75 @@ const CONFIG = {
 const $ = id => document.getElementById(id);
 const DEMO = CONFIG.API_URL.includes('PASTE_');
 const W = 1080, H = 1350;
+const GUEST_KEY = 'galeri_guest_name';
+
+function normalizeGuestName(value){
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9 ]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/ /g, '_');
+}
+
+function getGuestName(){
+  try {
+    return normalizeGuestName(localStorage.getItem(GUEST_KEY));
+  } catch (e) {
+    return '';
+  }
+}
+
+function setGuestName(value){
+  const safe = normalizeGuestName(value);
+  if (!safe) return '';
+  try { localStorage.setItem(GUEST_KEY, safe); } catch (e) {}
+  return safe;
+}
+
+function showGuestPrompt(){
+  $('lock').style.display = 'flex';
+  $('app').classList.add('hidden');
+  $('nameForm').classList.remove('hidden');
+  $('guestName').focus();
+}
+
+function hideGuestPrompt(){
+  $('lock').style.display = 'none';
+  $('app').classList.remove('hidden');
+  $('nameForm').classList.add('hidden');
+}
 
 /* ---------- Akses via QR ---------- */
 const params = new URLSearchParams(location.search);
 let KEY = params.get('k');
 try { if (KEY) localStorage.setItem('galeri_key', KEY); else KEY = localStorage.getItem('galeri_key'); } catch(e){}
 if (DEMO && !KEY) KEY = 'demo';
-if (!KEY) { $('lock').style.display = 'flex'; }
-else { $('app').classList.remove('hidden'); init(); }
+
+const guestName = getGuestName();
+if (!KEY) {
+  $('lock').style.display = 'flex';
+  $('nameForm').classList.add('hidden');
+} else if (!guestName) {
+  showGuestPrompt();
+} else {
+  hideGuestPrompt();
+  init();
+}
+
+$('nameForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const value = normalizeGuestName($('guestName').value);
+  if (!value) {
+    toast('Isi nama dulu ya sebelum masuk galeri.');
+    $('guestName').focus();
+    return;
+  }
+  setGuestName(value);
+  hideGuestPrompt();
+  init();
+});
 
 function toast(msg, ms = 2600){
   const t = $('toast'); t.textContent = msg; t.classList.add('show');
@@ -447,15 +518,20 @@ $('send').onclick = async () => {
       demoPhotos.unshift({ src: url, full: url, dl: url });
       $('editor').classList.remove('show'); toast('Foto masuk galeri (mode demo) 🎉'); loadList(); return;
     }
+    const guestName = getGuestName();
+    if (!guestName) {
+      toast('Isi nama dulu ya sebelum upload foto.');
+      showGuestPrompt();
+      return;
+    }
     const b64 = await new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(String(fr.result).split(',')[1]); fr.onerror = rej; fr.readAsDataURL(blob); });
-    const name = `foto_${new Date().toISOString().replace(/[:.]/g,'-')}_${Math.random().toString(36).slice(2,6)}.jpg`;
-    const r = await fetch(CONFIG.API_URL, { method: 'POST', body: JSON.stringify({ k: KEY, name, data: b64 }) }); // text/plain → tanpa preflight CORS
+    const r = await fetch(CONFIG.API_URL, { method: 'POST', body: JSON.stringify({ k: KEY, name: guestName, data: b64 }) }); // text/plain → tanpa preflight CORS
     const d = await r.json();
     if (!d.ok) throw new Error(d.error || 'Gagal');
     $('editor').classList.remove('show'); toast('Foto terkirim! Terima kasih 🎉');
     loadList(true); setTimeout(() => loadList(true), 3500);
   }catch(e){
-    toast('Gagal mengirim: ' + (e.message || 'cek koneksi') , 3600);
+    toast(e.message || 'Gagal mengirim: cek koneksi', 3600);
   }finally{ btn.disabled = false; btn.textContent = 'Kirim ke Galeri 🎉'; }
 };
 </script>

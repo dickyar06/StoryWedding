@@ -11,6 +11,30 @@ const ACCESS_KEY = 'story-day';              // Kunci rahasia, harus SAMA dengan
 
 const MAX_LIST = 300;       // jumlah foto terbaru yang ditampilkan
 const CACHE_SECONDS = 15;   // cache daftar foto agar tidak berat saat banyak tamu
+const MAX_PHOTOS_PER_PERSON = 5;
+
+function sanitizePersonName(name) {
+  return String(name || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9 ]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/ /g, '_');
+}
+
+function countPhotosByPerson(baseName) {
+  const prefix = String(baseName || '').toLowerCase();
+  if (!prefix) return 0;
+
+  let total = 0;
+  const files = DriveApp.getFolderById(FOLDER_ID).getFiles();
+  while (files.hasNext()) {
+    const name = String(files.next().getName() || '').toLowerCase();
+    if (name === prefix || name.startsWith(prefix + '_') || name.startsWith(prefix + '-')) total += 1;
+  }
+  return total;
+}
 
 function json_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj))
@@ -50,9 +74,16 @@ function doPost(e) {
     if (body.k !== ACCESS_KEY) return json_({ ok: false, error: 'Kunci salah.' });
     if (!body.data || body.data.length < 100) return json_({ ok: false, error: 'Data foto kosong.' });
 
+    const personName = sanitizePersonName(body.name);
+    if (!personName) return json_({ ok: false, error: 'Nama wajib diisi sebelum upload.' });
+    if (countPhotosByPerson(personName) >= MAX_PHOTOS_PER_PERSON) {
+      return json_({ ok: false, error: 'Batas upload 5 foto per orang sudah tercapai.' });
+    }
+
     lock.waitLock(20000);
     const bytes = Utilities.base64Decode(body.data);
-    const name = String(body.name || ('foto_' + Date.now() + '.jpg')).replace(/[^\w.\-]/g, '_');
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const name = `${personName}_${timestamp}.jpg`;
     const blob = Utilities.newBlob(bytes, 'image/jpeg', name);
     const file = DriveApp.getFolderById(FOLDER_ID).createFile(blob);
     try { file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch (_) {}
